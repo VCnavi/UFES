@@ -1,0 +1,226 @@
+---
+fontsize: 12pt
+output: 
+  pdf_document: 
+    number_sections: yes
+    fig_caption: yes
+    fig_crop: no
+---
+
+\thispagestyle{empty}
+
+```{=tex}
+\begin{center}
+    
+    \Large \textbf{UNIVERSIDADE FEDERAL DO ESPÍRITO SANTO}
+    
+    \vspace{4.5 cm}
+    \large \textbf{Trabalho de Estatística III}
+
+    \vspace{4.5 cm}
+    \Large \textbf{IVAN CUNHA VIEIRA}
+    
+    \vspace{8 cm}
+    \large VITÓRIA, ES \\
+    2024
+    
+\end{center}
+```
+\newpage
+
+# Introdução
+
+O dataset escolhido para o trabalho contém informações acerca dos salários de 375 empregados de uma empresa. Cada linha do dataset representa um empregado diferente, que são descritos pelos seus respectivos salários anuais (USD) e anos de experiência. O objetivo do presente trabalho é o de tentar relacionar tais variáveis.
+
+A princípio, foi feita uma análise descritiva, no intuito de organizar e resumir os importantes aspectos e características de cada uma das variáveis. Após a análise, foi efetuada uma tentativa de um modelo de regressão linear com base nos anos de experiência dos funcionários e seus devidos salários.
+
+# Análise Descritiva
+
+Para a análise descritiva, apresenta-se abaixo a tabela contendo as medidas resumo relativas às variáveis estudadas (salário anual e anos de experiência), além de gráficos para facilitar a análise.
+
+Observa-se, por meio da tabela das medidas-resumo, uma alta variação nos salários anuais dos funcionários desta empresa, no intervalo de [30000; 250000]. A variável que diz respeito aos anos de experiência apresenta menor variabilidade, no intervalo de [0; 25], o que é justificado pelas maiores limitações da idade humana em comparação às limitações salariais. Pela mesma ótica, percebe-se que a variação dos anos de experiência é bem alta quando considerados o tempo de vida e trabalho das pessoas.
+
+Ao examinar os gráficos de densidade das variáveis, é perceptível a semelhança na tendência de comportamento dos salários e dos anos de experiência, uma vez que, ao mesmo tempo em que há uma baixa densidade de salários próximos aos US\$ 250.000,00, também há uma menor densidade de funcionários próximos de 25 anos de experiência, da mesma forma que uma maior densidade de salários próximos aos de US\$ 30.000,00 é acompanhada de funcionários próximos a 0 anos de experiência, além de distribuições semelhantes para os demais salários e anos de experiência. Esses comportamentos indicam uma possível correlação entre as variáveis. É possível reparar também que nenhum valor aberrante foi apresentado nos gráficos de boxplot.
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(kableExtra)
+library(tidyr)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Carregando os arquivos
+df <- read.csv("C:/Users/Samsung/Desktop/ivan/Est/Salary Data.csv")
+summary(df)
+str(df)
+df <- na.omit(df)
+attach(df)
+options(scipen = 9)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Recolhendo os sumários das variáveis
+s1 <- summary(df$Salary)
+s1
+s2 <- summary(df$Years.of.Experience)
+s2
+```
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# Recolhendo as medidas-resumo das variáveis
+fix(s1)
+fix(s2)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+salario <- c("Mínimo" = 30000, "1º Quartil" = 55000, "Mediana" = 95000, "Média" = round(100670.241286863, 4), 
+"3º Quartil" = 140000, "Máximo" = 250000, "D.P." = round(sd(df$Salary), 4))
+experiencia <- c("Mínimo" = 0, "1º Quartil" = 4, "Mediana" = 9, "Média" = round(10.0308310991957, 4), 
+"3º Quartil" = 15, "Máximo" = 25, "D.P." = round(sd(df$Years.of.Experience), 4))
+
+medidas <- as.data.frame(t(data.frame(experiencia, salario)))
+row.names(medidas) <- c("Experiência", "Salário")
+```
+
+```{r echo=FALSE, tab.cap="Medidas-resumo", message=FALSE, warning=FALSE}
+kableExtra::kable(medidas,
+                  format = "markdown")
+```
+
+```{r echo=FALSE, fig.cap="Densidade e boxplot da variável salário", fig.height=4, fig.width=6, message=FALSE, warning=FALSE}
+par(mfrow=c(1,2), cex.main=0.7,cex.lab=0.5,cex.axis=0.7)
+plot(d<-density(Salary), main="Densidade dos salários", 
+     xlab="salário", 
+     ylab="densidade")
+polygon(d, col="gray")
+boxplot(Salary,
+        main = "Boxplot dos salários",
+        ylab = "salário")
+par(mfrow=c(1,1))
+```
+
+```{r echo=FALSE, fig.cap="Densidade e boxplot da variável anos de experiência", fig.height=4, fig.width=5.5, message=FALSE, warning=FALSE}
+par(mfrow=c(1,2), cex.main=0.7,cex.lab=0.5,cex.axis=0.7)
+plot(d <- density(Years.of.Experience), 
+     main = "Densidade dos anos de experiência",
+     xlab = "anos",
+     ylab = "densidade")
+polygon(d, col="gray")
+boxplot(Years.of.Experience,
+        main = "Boxplot dos anos de experiência",
+        ylab = "Anos")
+par(mfrow=c(1,1))
+```
+
+\newpage
+
+Adiante, segue-se com o gráfico de dispersão das variáveis. É evidente, através deste gráfico, que há uma relação positiva forte entre os salários e os anos de experiências dos funcionários, fato evidenciado também pela correlação calculada em 0.9309, de forma que maiores anos de experiência influenciam diretamente nos salários dos funcionários. Desse modo, após verificar os comportamentos das variáveis, é possível ajustar um modelo normal linear da forma: 
+$$
+salario_i = \alpha + \beta experiencia_i+e_i \textit{ , i = 1, ..., 373.}
+$$
+
+```{r echo=FALSE, fig.cap="Dispersão das variáveis salário e anos de experiência", fig.height=4, fig.width=6, message=FALSE, warning=FALSE}
+# Dispersão das variáveis
+par(mfrow=c(1,1), cex.main=0.7,cex.lab=0.5,cex.axis=0.7)
+plot(Years.of.Experience,Salary,
+     xlab = "anos",
+     ylab = "salário",
+     main = "Salário anual x Anos de experiência")
+```
+
+Seguindo o ajuste do modelo, chegou-se nos resultados da tabela abaixo. O erro padrão dos resíduos (raíz do quadrado médio dos resíduos) foi calculado como 17580 com 371 graus de liberdade, e seu R² foi calculado como 0.8663. Dessa forma, conclui-se que, pelo modelo, cerca de 86% da variação dos salários dos funcionários desta empresa se relaciona linearmente com os anos de experiência, indicando que outras informações não consideradas, como gênero, idade, grau educacional e qual trabalho o funcionário exerce (informações presentes no dataset), podem ser os fatores que resultem na variação dos outros 14% dos dados.
+
+Como se observa no gráfico de envelope a seguir, há diversos pontos fora dos limites do envelope. Essa observação, juntamente ao R² abaixo de 90%, traz indícios de que o modelo utilizado para modelar estes dados não é, provavelmente, o mais adequado, apesar de conseguir explicar parte do comportamento das variáveis.
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Obtendo os ajustes
+fit.model<-lm(Salary~Years.of.Experience)
+s3 <- summary(fit.model)
+s3
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+alpha <- c(round(32199.4984933093, 4), round(1665.49213645363, 4), round(19.3333236396255, 4), "<2e-16")
+beta <- c(round(6826.02888199804, 4), round(139.034220767713, 4), round(49.0960343741734, 4), "<2e-16")
+coeficientes = as.data.frame(t(data.frame(alpha,beta)))
+row.names(coeficientes) <- c("$\\alpha$","$\\beta$")
+
+kableExtra::kable(coeficientes,
+                  format = "markdown",
+                  caption = "Ajuste do modelo normal linear",
+                  col.names = c("Estimativas", "Erro Padrão", "t-valor", "p-valor"))
+```
+
+```{r echo=FALSE, fig.cap="Envelope do ajuste normal", fig.height=3.5, fig.width=6, message=FALSE, warning=FALSE}
+# Obtendo o envelope
+source("C:/Users/Samsung/Desktop/ivan/Est/Trabalho regressao/envel_norm.txt")
+```
+
+```{r echo=FALSE, fig.cap="Diagnóstico do ajuste normal", fig.height=4.5, fig.width=6, message=FALSE, warning=FALSE}
+# Obtendo os gráficos de diagnóstico
+source("C:/Users/Samsung/Desktop/ivan/Est/Trabalho regressao/diag_normal.txt", encoding = "latin1")
+```
+
+\newpage
+
+Corroborando com o que foi analisado através do gráfico de envelope, os gráficos de diagnóstico também apresentam informações que indicam que o modelo utilizado não é o mais adequado para os dados. Apesar de não apresentar pontos de alavancagem e apresentando pontos de influência pouco relevantes (pela distância de Cook, pontos muito longe de 1), o modelo apresenta diversas observações que demonstram haver heterocedasticidade no conjunto dos dados, o que vai contra a ideia do modelo normal linear. No caso dessas observações, se torna difícil enumerar cada uma, pois são muitas, e remover muitos dados para conseguir encaixar a modelagem não seria produtivo. Portanto, para o caso do problema da heterocedasticidade, seguiu-se com a transformação de Box-Cox.
+
+```{r echo=FALSE, fig.cap="Transformação de boxcox", fig.height=3.5, fig.width=6, message=FALSE, warning=FALSE}
+# Boxcox
+require(MASS)
+par(mfrow=c(1,1),cex.lab=0.7,cex.axis=0.7)
+boxcox(fit.model, lam=seq(0,1,1/10))
+```
+
+\newpage
+
+Foi possível perceber, pelo gráfico apresentado, que o valor de $\lambda = 0.5$ se encontra entre os possíveis valores de lambda. Este é um valor interessante para usar, pois, na transformação de Box-Cox, ele apresenta uma transformação mais fácil de interpretar, de tal forma que $Y'=\dfrac{\sqrt Y-1}{0.5}$, o que também facilita seu uso.
+
+Prosseguindo com a transformação, percebe-se, através dos gráficos de envelope e dos gráficos de diagnóstico do novo modelo, que somente a transformação não foi suficiente para resolver os problemas de não normalidade e de heterocedasticidade presentes na modelagem anterior, apesar dos dados apresentarem melhores resultados referentes à normalidade, mas ainda com pontos fora do envelope. Essas observações demonstram novamente que a modelagem escolhida foi inadequada para o conjunto de dados.
+
+Ao testar outras mudanças na modelagem, foi encontrada uma modelagem que abrangia outra covariável, sendo esta o tipo de trabalho exercido pelo funcionário, tal que o modelo encontrou R² = 0.966. Dessa maneira, é possível interpretar que é importante, para esse conjunto de dados, modelagens que envolvam múltiplas covariáveis, como a seguinte:
+
+$$
+salario_i = \alpha + \beta_1 experiencia_i + \beta_2 trabalho_i +e_i \textit{ , i = 1, ..., 373.}
+$$
+
+```{r echo=FALSE, fig.cap="Densidade e dispersão da variável transformada", fig.height=4, fig.width=6, message=FALSE, warning=FALSE}
+salariot <- (df$Salary^(0.5)-1)/0.5
+cor(salariot,Years.of.Experience)
+par(mfrow=c(1,2), cex.main=0.7,cex.lab=0.5,cex.axis=0.7)
+plot(d <- density(salariot),
+     main = "Densidade dos salários transformados",
+     xlab = "salario",
+     ylab = "densidade")
+polygon(d, col = 'gray')
+plot(df$Years.of.Experience,salariot,
+     main = "Salário anual transformado x Anos de experiência",
+     xlab = "anos",
+     ylab = "salário")
+par(mfrow=c(1,1))
+
+fit.model <- lm(salariot~Years.of.Experience)
+```
+
+```{r echo=FALSE, fig.cap="Envelope do ajuste normal da variável transformada", fig.height=3.5, fig.width=6, message=FALSE, warning=FALSE}
+# Obtendo o envelope
+source("C:/Users/Samsung/Desktop/ivan/Est/Trabalho regressao/envel_norm.txt")
+```
+
+```{r echo=FALSE, fig.cap="Diagnóstico do ajuste normal da variável transformada", fig.height=4.5, fig.width=6, message=FALSE, warning=FALSE, }
+# Obtendo os gráficos de diagnóstico
+source("C:/Users/Samsung/Desktop/ivan/Est/Trabalho regressao/diag_normal.txt", encoding = "latin1")
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Modelagem multivariada
+model <- lm(Salary~Years.of.Experience + Job.Title)
+summary(model)
+```
+
+\newpage
+
+# Conclusões
+
+A partir do estudo da correlação entre salários anuais de funcionários de uma empresa e seus respectivos anos de experiência, foi possível observar que, conforme mais anos de experiência o funcionário tiver, o salário desse funcionário também será maior, apresentando assim uma forte correlação positiva. Além disso, pela variação dos anos de experiência ser numericamente baixa, percebeu-se que mesmo alguns valores próximos causavam mudanças significativas na variável resposta. A dispersão dos dados também apresentou um formato de funil, o que trouxe indícios de uma possível heterocedasticidade no momento da modelagem, que se provou verdade posteriormente. 
+
+Os dados apresentarem diversas observações atípicas na modelagem, principalmente nos gráficos dos resíduos padronizados. Dessa forma, não foi possível determinar todas as observaçoes atípicas, uma vez que seria improdutivo enumerar tantas observações, provando que o modelo escolhido para o estudo desses dados foi inadequado. O gráfico de envelope também trouxe as mesmas conclusões sobre a modelagem. Ainda assim, por conta dos fortes indícios de heterocedasticidade, utilizou-se do método de Box-Cox para procurar uma transformação que tornasse o modelo homocedástico, o que se provou ineficiente quando analisou-se novamente os gráficos de envelope e de diagnóstico. Percebeu-se, ao fim, que, além da modelagem não ter sido a mais adequada, é provável que o uso de apenas uma covariável no modelo tenha sido insuficiente, se fazendo necessário estudar modelos que acomodem mais covariáveis do banco de dados.

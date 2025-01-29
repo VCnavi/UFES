@@ -1,0 +1,333 @@
+---
+title: "Trabalho de Variáveis Aleatórias"
+author: "Ivan Cunha Vieira"
+output: 
+  pdf_document: 
+    fig_width: 6
+    fig_height: 4.25
+toc: TRUE
+fontsize: 12pt
+---
+
+\newpage
+
+# Questão 1
+
+A Lei dos Grandes Números (LGN) é um dos resultados mais importantes na teoria estatística. Tal resultado permite afirmar que a média amostral tende para a média populacional, quando o tamanho da amostra é suficientemente grande. Sugira um programa, em código R, que permita mostrar computacionalmente a LGN para valores pseudo-aleatórios de uma variável aleatória binomial com parâmetros n = 10 e p = 0.1.
+
+## Resposta:
+
+```{r echo=TRUE}
+# Definindo os parâmetros da distribuição binomial
+n <- 10
+p <- 0.1
+
+# Número de amostras a gerar
+num_amostras <- 1000
+
+# Vetor que irá conter as médias obtidas
+seq_medias <- NULL
+
+# Definir seed para reprodutibilidade
+set.seed(123)
+
+# Armazenar os números aleatórios gerados
+y <- rbinom(num_amostras, size = n, prob = p)
+
+# 
+for (i in 1:num_amostras){
+  seq_medias[i] <- mean(y[1:i])
+}
+
+# Plotar as médias amostrais em função do tamanho da amostra
+plot(1:num_amostras, seq_medias, type = "l", 
+     main = "Lei dos Grandes Números para Binomial(10, 0.1)",
+     xlab = "Tamanho da Amostra", ylab = "Média Amostral")
+
+# Adicionar a linha horizontal no valor esperado da média teórica
+abline(h = n * p, col = "red", lty = 2)
+legend("topright", legend = c("Média Amostral", "Valor Esperado da Média"),
+       col = c("black", "red"), lty = c(1, 2))
+```
+
+\newpage
+
+# Questão 2
+
+Seja X uma variável aleatória em um espaço de probabilidade ($\Omega$, A, P) e suponha que X = U(0, 1). Obtenha a distribuição de Y = -ln(X).
+
+-   Faça uma análise descritiva;
+
+-   Qual a distribuição de Y ? Veja de forma simulada e na forma teórica;
+
+-   Com base na distribuição da variável aleatória (v.a.) Y do exercício acima, implemente uma função em R que gere observações de Y.
+
+## Resposta:
+
+Temos que X é uma v.a. com distribuição uniforme (0,1) e Y uma v.a. com distribuição -ln(X). Dessa forma, nós podemos utilizar de transformações para calcular a probabilidade de Y, como a seguir: $$P(Y \leq y)= P(-\ln(X)\leq y)$$ Procurando simplificar a inequação, encontramos: $$-\ln(X)\leq y \Rightarrow \ln(X)\geq -y \Rightarrow X \geq e^{-y}$$ Dessa forma: $$
+P(Y\leq y)=P(X\geq e^{-y})=1-P(X<e^{-y})
+$$ Encontramos a $Fx(x)$ e a $Fy(y)$, como demonstrado:
+
+$$
+P(X<e^{-y})=F_X(e^{-y})=e^{-y} \\
+P(Y\leq y)=1-P(X<e^{-y})=1-F_X(e^{-y})=1-e^{-y}=F_Y(y)
+$$ Tomando a derivada: $$
+f_Y(y)=\frac{d}{dy}F_Y(y)=\frac{d}{dy}(1-e^{-y})=e^{-y}\mbox{ ,   para }y>0
+$$ E, dessa forma, encontramos a função densidade de probabilidade (f.d.p) de Y, que segue uma distribuição exponencial com parâmetro $\lambda = 1$ ($Y \sim Exp(1)$).
+
+Abaixo, a representação gráfica das funções de distribuição acumulada e de densidade de probabilidade de Y:
+
+```{r echo=FALSE}
+# Função densidade de probabilidade (f.d.p.) de Y ~ -ln(X) (exponencial com lambda = 1)
+fdp_Y <- function(y) {
+  ifelse(y >= 0, exp(-y), 0)
+}
+
+# Definir seed para reprodutibilidade
+set.seed(123)
+
+# Gerando valores de y para plotar a f.d.p de Y
+y1_values <- seq(0, 6, length.out = 1000)
+fdp_Y_values <- fdp_Y(y1_values)
+
+# Plotando a f.d.p. de Y ~ -ln(X)
+plot(y1_values, fdp_Y_values, type = "l", col = "blue",
+     main = "Função Densidade de Probabilidade de Y ~ -ln(X)",
+     xlab = "y", ylab = "f(y)")
+
+# Preenchendo a área sob a curva da PDF de Y
+polygon(c(0, y1_values, 6), c(0, fdp_Y_values, 0), col = "lightblue")
+```
+
+```{r echo=FALSE}
+# # Função de distribuição acumulada (f.d.a.) de Y ~ -ln(X) (exponencial com lambda = 1)
+fda_Y <- function(y) {
+  ifelse(y >= 0, 1-exp(-y), 0)
+}
+
+# Definir seed para reprodutibilidade
+set.seed(123)
+
+# Gerando valores de y para plotar a f.d.a de Y
+y2_values <- seq(0, 6, length.out = 1000)
+fda_Y_values <- fda_Y(y2_values)
+
+# Plotando a f.d.a. de Y ~ -ln(X)
+plot(y2_values, fda_Y_values, type = "l", col = "red",
+     main = "Função de Distribuição Acumulada de Y ~ -ln(X)",
+     xlab = "y", ylab = "f(y)")
+
+# Preenchendo a área sob a curva da PDF de Y
+polygon(c(0, y2_values, 6), c(0, fda_Y_values, 0), col = "pink")
+```
+
+Implementando uma função geradora da distribuição de Y:
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+gerar_Y <- function(n) {
+  # Gera n observações de uma variável aleatória Y ~ Exp(1)
+  y_values <- rexp(n, rate = 1)
+  return(y_values)
+}
+
+# Definir seed para reprodutibilidade
+set.seed(123)  
+
+# Exemplo de uso: gerar 10 observações de Y
+obs <- gerar_Y(10)
+print(obs)
+```
+
+\newpage
+
+# Questão 3
+
+Gere X1, X2, . . . , Xn variáveis aleatórias, n = 10, 30, 500, 10000, das distribuições a seguir:
+
+-   Binomial(n, 0.6)
+
+-   Poisson(3)
+
+-   X²(6)
+
+-   F(5,3)
+
+Diante disso: 
+[i.] Considere o Teorema Central do Limite, ou seja, pegue as variáveis acima e verifique, com o qqplot (qqnorm) se de fato as variáveis acima convergem para a normal. Se sim, diga para qual normal (parâmetros) ocorre a convergência. Para responder sobre a convergência utilize apenas n = 10000 e diga se coincide com a teoria. 
+[ii.] Aplique um teste de ajuste (aderência) e conclua sobre o que afirma no item anterior.
+
+## Resposta
+
+Plotando os gráficos para verificar as formas das distribuições, na respectiva ordem do exercício:
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Definindo os valores de n
+n_values <- c(10, 30, 500, 10000)
+
+# Definindo os parâmetros das distribuições
+p <- 0.6
+lambda <- 3
+k <- 6
+d1 <- 5
+d2 <- 3
+```
+
+```{r echo=FALSE}
+# Definir seed para reprodutibilidade
+set.seed(123)
+
+par(mfrow = c(2, 2))
+
+# V.A.s para cada valor de n
+for (n in n_values) {
+  a <- rbinom(n, size = n, prob = p)
+  hist(a, main = paste("Histograma para n =", n),
+  xlab = "Valor", ylab = "Frequência", col = "skyblue", border = "white")
+}
+mtext("Binomial(0.6)",side = 3,line = -1.5, outer = TRUE)
+par(mfrow = c(1, 1))
+```
+
+```{r echo=FALSE}
+# Definir seed para reprodutibilidade
+set.seed(123)
+
+par(mfrow = c(2, 2))
+
+# V.A.s para cada valor de n
+for (n in n_values) {
+  a <- rpois(n, lambda = 3)
+  hist(a, main = paste("Histograma para n =", n),
+  xlab = "Valor", ylab = "Frequência", col = "skyblue", border = "white")
+}
+mtext("Poisson(3)",side = 3,line = -2, outer = TRUE)
+par(mfrow = c(1, 1))
+```
+
+```{r echo=FALSE}
+# Definir seed para reprodutibilidade
+set.seed(123)
+
+par(mfrow = c(2, 2))
+
+# V.A.s para cada valor de n
+for (n in n_values) {
+  a <- rchisq(n, df = k)
+  hist(a, main = paste("Histograma para n =", n),
+  xlab = "Valor", ylab = "Frequência", col = "skyblue", border = "white")
+}
+mtext("X²(6)", side = 3, line = -1.5, outer = TRUE)
+par(mfrow = c(1, 1))
+```
+
+```{r echo=FALSE}
+# Definir seed para reprodutibilidade
+set.seed(123)
+
+par(mfrow = c(2, 2))
+
+# V.A.s para cada valor de n
+for (n in n_values) {
+  a <- rf(n, df1 = d1, df2 = d2)
+  hist(a, main = paste("Histograma para n =", n),
+  xlab = "Valor", ylab = "Frequência", col = "skyblue", border = "white")
+}
+mtext("F(5,3)", side = 3, line = -1.5, outer = TRUE)
+par(mfrow = c(1, 1))
+```
+
+Com o objetivo de verificar se as variáveis geradas acima convergem para uma normal, utilizaremos a função qqnorm (que produz uma normal dos valores atribuídos à ela) e qqline (que adiciona uma linha dos valores teóricos da normal), de tal forma que apenas será empregue o valor de n = 10000.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+n <- 10000
+
+par(mfrow = c(2, 2))
+
+# Binomial(n, 0.6)
+set.seed(123)
+amostra_binomial <- rbinom(n, size = n, prob = p)
+qqnorm(amostra_binomial, main = "Binomial(n, 0.6)",
+       xlab = "Quantis Teóricos",
+       ylab = "Quantis Amostrais")
+qqline(amostra_binomial, col = "red")
+
+# Poisson(3)
+set.seed(123)
+amostra_poisson <- replicate(n, sum(rpois(n, lambda = lambda)))
+qqnorm(amostra_poisson, main = "Poisson(3)",
+       xlab = "Quantis Teóricos",
+       ylab = "Quantis Amostrais")
+qqline(amostra_poisson, col = "red")
+
+# Chi-quadrado(6)
+set.seed(123)
+amostra_chisq <- replicate(n, sum(rchisq(n, df = k)))
+qqnorm(amostra_chisq, main = "X²(6)",
+       xlab = "Quantis Teóricos",
+       ylab = "Quantis Amostrais")
+qqline(amostra_chisq, col = "red")
+
+# F(5, 3)
+set.seed(123)
+amostra_f <- rf(n, df1 = d1, df2 = d2)
+qqnorm(amostra_f, main = "F(5,3)",
+       xlab = "Quantis Teóricos",
+       ylab = "Quantis Amostrais")
+qqline(amostra_f, col = "red")
+
+mtext("QQPlot - n = 10000", side = 3, line = -1.5, outer = TRUE)
+
+par(mfrow = c(1, 1))
+```
+
+De acordo com a visualização dos gráficos, é perceptível uma semelhança no comportamento das variáveis aleatórias das distribuições Poisson, Binomial e X², enquanto a distribuição F apresenta comportamento diferente, sendo a única que não aparente interceptar totalmente a linha dos valores teóricos (vermelha).
+
+Ao fim, para complementar a visualização, um teste de ajuste (teste de Anderson-Darling) será feito para termos valores numéricos que serão utilizados para confirmação dos resultados:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Pacote necessário para o teste de aderência com mais de 5000 amostras
+library(nortest)
+
+set.seed(123) # Definindo a semente para reprodutibilidade
+
+# Binomial(n, 0.6)
+ad_binomial <- ad.test(amostra_binomial)
+
+# Poisson(3) - Gerando a soma de variáveis Poisson
+ad_poisson <- ad.test(amostra_poisson)
+
+# X²(6) - Gerando a soma de variáveis X²
+ad_chisq <- ad.test(amostra_chisq)
+
+# F(5, 3)
+ad_f <- ad.test(amostra_f)
+
+# Exibindo os resultados
+list(Dist_Binomial = ad_binomial,
+  Dist_Poisson = ad_poisson,
+  Dist_Chisq = ad_chisq,
+  Dist_F = ad_f)
+```
+
+Após os testes, é possível observar que o único p-valor que se apresentou como significativamente baixo foi no teste feito para a distribuição F, demonstrando, estatisticamente, que essa distribuição não converge para uma normal. Os demais testes apresentaram p-valores significativamente altos, o que comprova que essas distribuições convergem para uma normal. Os resultados dos testes evidenciam, assim, semelhança com o que foi visto nos gráficos.
+
+Dessa forma, levando em consideração apenas o que é dito pelo Teorema Central do Limite e o que foi apresentado nos gráficos e nos testes, estes são os resultados de cada distribuição e suas aproximações da normal, caso convergissem:
+
+-   Para a Binomial(10000, 0.6), a distribuição converge para uma normal. De forma teórica, os valores dos parâmetros deveriam ser $\mu = np = 10000*0.6 = 6000$ e $\sigma^2 = np(1-p) = 6000*0.4 = 2400$. Na simulação, a distribuição expressou proximidade com a teórica, convergindo para uma normal com parâmetros:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+paste("média =", mean(amostra_binomial),"e variância =", var(amostra_binomial))
+```
+
+-   Para a Poisson(3), a distribuição converge para uma normal. De forma teórica, os valores dos parâmetros deveriam ser $\mu = n\lambda = 10000*3 = 30000$ e $\sigma^2 = n\lambda = 30000$. Na simulação, a distribuição expressou proximidade com a teórica, convergindo para uma normal com parâmetros:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+paste("média =", mean(amostra_poisson),"e variância = ", var(amostra_poisson))
+```
+
+-   Para a X²(6), a distribuição converge para uma normal. De forma teórica, os valores dos parâmetros deveriam ser $\mu = nk = 10000*6 = 60000$ e $\sigma^2 = 2nk = 120000$. Na simulação, a distribuição expressou proximidade com a teórica, convergindo para uma normal com parâmetros:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+paste("média =", mean(amostra_chisq),"e variância = ", var(amostra_chisq))
+```
+-   Para a F(5,3), a distribuição não converge para uma normal.
