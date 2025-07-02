@@ -1,0 +1,69 @@
+#---------------------------------------------------------------#
+# Para rodar este programa  deixe no objeto fit.model a saída 
+# do  ajuste  da  regressão com  erro normal. Deixe  os dados 
+# disponíveis  através do comando attach(...). Depois  use  o 
+# comando source(...) no S-Plus ou R para executar o programa. 
+# A sequência de comandos é a seguinte:
+#
+#        > fit.model <- ajuste
+#        > attach(dados)
+#        > source("diag_norm")
+#
+# A saída terá quatro gráficos: de pontos de alavanca, de pontos
+# influentes  e  dois de resíduos. Para identificar os pontos
+# que  mais  se destacam usar o comando identify(...). Se por
+# exemplo se destacam três pontos no plot(fitted(fit.model),h,...), 
+# após esse comando coloque
+#     
+#        > identify(fitted(fit.model),h,n=3)
+#
+# O mesmo pode ser feito nos demais gráficos. Nos gráficos de 
+# resíduos foram traçados os limites ylim=c(a-1,b+1), onde a
+# é o menor valor e b o maior valor para o resíduo..Mude esses 
+# limites  se  necessário.Para voltar a ter apenas um gráfico 
+# por tela faça o seguinte:
+#
+#        > par(mfrow=c(1,1))
+# 
+#---------------------------------------------------------------#
+#
+X <- model.matrix(fit.model)
+n <- nrow(X)
+p <- ncol(X)
+H <- X%*%solve(t(X)%*%X)%*%t(X)
+h <- diag(H)
+lms <- summary(fit.model)
+s <- lms$sigma
+r <- resid(lms)
+ts <- r/(s*sqrt(1-h))
+di <- (1/p)*(h/(1-h))*(ts^2)
+si <- lm.influence(fit.model)$sigma
+tsi <- r/(si*sqrt(1-h))
+a <- max(tsi)
+b <- min(tsi)
+par(mfrow=c(2,2),cex.main=0.7,cex.lab=0.5,cex.axis=0.7)
+plot(h,xlab="Indice", ylab="Medida h", pch=16, ylim=c(0,0.2))
+cut <- 2*p/n
+abline(cut,0,lty=2)
+#identify(h, n=1)
+#title(sub="(a)")
+#
+plot(di,xlab="Indice", ylab="Distancia de Cook", pch=16)
+identify(di, n=6)
+#title(sub="(b)")
+#
+plot(tsi,xlab="Indice", ylab="Resíduo Padronizado",
+ylim=c(b-1,a+1), pch=16)
+abline(2,0,lty=2)
+abline(-2,0,lty=2)
+#identify(tsi, n=2)
+#title(sub="(c)")
+#
+plot(fitted(fit.model),tsi,xlab="Valores Ajustados", 
+ylab="Residuo Padronizado", ylim=c(b-1,a+1), pch=16)
+abline(2,0,lty=2)
+abline(-2,0,lty=2)
+#title(sub="(d)")
+#identify(fitted(fit.model),tsi, n=2)
+#---------------------------------------------------------------#
+
